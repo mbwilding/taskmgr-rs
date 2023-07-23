@@ -106,7 +106,7 @@ impl TaskManagerApp {
             // });
 
             // Table
-            let mut table = TableBuilder::new(ui)
+            let table = TableBuilder::new(ui)
                 .striped(true)
                 .resizable(true)
                 .auto_shrink([false, false])
@@ -143,13 +143,13 @@ impl TaskManagerApp {
                     });
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                            ui.heading(" ");
+                            ui.heading("0%"); // TODO
                             ui.selectable_value(processes_sort, EProcessesSort::Disk, "Disk");
                         });
                     });
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                            ui.heading(" ");
+                            ui.heading("0%"); // TODO
                             ui.selectable_value(processes_sort, EProcessesSort::Network, "Network");
                         });
                     });
@@ -235,10 +235,11 @@ impl TaskManagerApp {
                             });
                             // Network
                             row.col(|ui| {
-                                if ui.button("kill").clicked() {
-                                    // TODO
-                                    process.kill();
-                                }
+                                // TODO
+                                ui.label("0 Mbps");
+                                // if ui.button("kill").clicked() {
+                                //     process.kill();
+                                // }
                             });
                         });
                     }
