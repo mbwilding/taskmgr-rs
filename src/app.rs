@@ -2,7 +2,10 @@ use egui::Context;
 use egui_extras::{Column, TableBuilder};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
-use sysinfo::{CpuExt, Process, ProcessExt, System, SystemExt};
+use sysinfo::{
+    CpuExt, CpuRefreshKind, Process, ProcessExt, ProcessRefreshKind, RefreshKind, System,
+    SystemExt, UserExt,
+};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 enum EWindow {
@@ -19,6 +22,7 @@ enum EWindow {
 #[derive(Serialize, Deserialize, PartialEq)]
 enum EProcessesSort {
     Name,
+    User,
     Cpu,
     Memory,
     Disk,
@@ -75,30 +79,77 @@ impl TaskManagerApp {
         Default::default()
     }
 
-    fn window_selection_panel(ctx: &Context, current_window: &mut EWindow) {
+    fn bottom_panel(ctx: &Context, current_window: &mut EWindow, sys: &mut System) {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(false)
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    // ui.style_mut().override_text_style = Some(TextStyle::Heading);
-                    ui.selectable_value(current_window, EWindow::Processes, "🔢 Processes");
-                    ui.selectable_value(current_window, EWindow::Performance, "📈 Performance");
-                    ui.selectable_value(current_window, EWindow::AppHistory, "📊 App history");
-                    ui.selectable_value(current_window, EWindow::StartupApps, "🏁 Startup apps");
-                    ui.selectable_value(current_window, EWindow::Users, "👥 Users");
-                    ui.selectable_value(current_window, EWindow::Details, "📄 Details");
-                    ui.selectable_value(current_window, EWindow::Services, "🛠 Services");
-                    ui.selectable_value(current_window, EWindow::Settings, "⚙ Settings");
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        // ui.style_mut().override_text_style = Some(TextStyle::Heading);
+                        ui.selectable_value(current_window, EWindow::Processes, "🔢 Processes");
+                        ui.selectable_value(current_window, EWindow::Performance, "📈 Performance");
+                        ui.selectable_value(current_window, EWindow::AppHistory, "📊 App history");
+                        ui.selectable_value(
+                            current_window,
+                            EWindow::StartupApps,
+                            "🏁 Startup apps",
+                        );
+                        ui.selectable_value(current_window, EWindow::Users, "👥 Users");
+                        ui.selectable_value(current_window, EWindow::Details, "📄 Details");
+                        ui.selectable_value(current_window, EWindow::Services, "🛠 Services");
+                        ui.selectable_value(current_window, EWindow::Settings, "⚙ Settings");
+                    });
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        #[cfg(target_os = "windows")]
+                        {
+                            ui.label(format!("Host: {}", sys.host_name().unwrap()));
+                            ui.label(format!("User: {}", sys.users().first().unwrap().name()));
+                            ui.label(format!(
+                                "OS: {} {}",
+                                sys.name().unwrap(),
+                                sys.os_version().unwrap()
+                            ));
+                        }
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            ui.label(format!("Host: {}", sys.host_name().unwrap()));
+                            ui.label(format!("OS: {}", sys.name().unwrap()));
+                            ui.label(format!("Version: {}", sys.os_version().unwrap()));
+                            ui.label(format!("Kernel: {}", sys.kernel_version().unwrap()));
+                        }
+                        egui::warn_if_debug_build(ui);
+                    });
                 });
             });
     }
 
-    fn processes_window(ctx: &Context, processes_sort: &mut EProcessesSort, sys: &mut System) {
+    fn processes_window(&mut self, ctx: &Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             // ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
             //     ui.heading("Processes");
             //     ui.separator();
             // });
+
+            // Update data
+            let now = Instant::now();
+            if now - self.last_refresh_time >= self.refresh_interval {
+                //sys.refresh_all();
+                self.sys.refresh_specifics(
+                    RefreshKind::new()
+                        //.with_networks()
+                        .with_cpu(CpuRefreshKind::new().with_cpu_usage().without_frequency())
+                        .with_processes(
+                            ProcessRefreshKind::new()
+                                .with_cpu()
+                                .with_user()
+                                .with_disk_usage(), //.without_user(),
+                        ),
+                );
+                self.last_refresh_time = now;
+            }
+
+            let processes_sort = &mut self.processes_sort;
 
             TableBuilder::new(ui)
                 .striped(true)
@@ -106,6 +157,7 @@ impl TaskManagerApp {
                 .auto_shrink([false, false])
                 .cell_layout(egui::Layout::right_to_left(egui::Align::Center))
                 .column(Column::initial(100.0).range(40.0..=300.0)) // Name
+                .column(Column::initial(100.0).range(40.0..=300.0)) // User
                 .column(Column::initial(100.0).range(50.0..=50.0)) // CPU
                 .column(Column::initial(100.0).range(40.0..=300.0)) // Memory
                 .column(Column::initial(100.0).range(40.0..=300.0)) // Disk
@@ -120,15 +172,22 @@ impl TaskManagerApp {
                     });
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                            let cpu = sys.global_cpu_info().cpu_usage();
+                            ui.heading(" ");
+                            ui.selectable_value(processes_sort, EProcessesSort::User, "User");
+                        });
+                    });
+                    header.col(|ui| {
+                        ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
+                            let cpu = self.sys.global_cpu_info().cpu_usage();
                             ui.heading(format!("{:.0}%", cpu));
                             ui.selectable_value(processes_sort, EProcessesSort::Cpu, "CPU");
                         });
                     });
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                            let memory =
-                                (sys.used_memory() as f64 / sys.total_memory() as f64) * 100.0;
+                            let memory = (self.sys.used_memory() as f64
+                                / self.sys.total_memory() as f64)
+                                * 100.0;
                             ui.heading(format!("{:.0}%", memory));
                             ui.selectable_value(processes_sort, EProcessesSort::Memory, "Memory");
                         });
@@ -149,14 +208,18 @@ impl TaskManagerApp {
                 .body(|mut body| {
                     let row_height = 28.0;
 
-                    let cpus = sys.physical_core_count().unwrap(); // May need to be virtual (32 rather than 16)
+                    let cpus = self.sys.cpus().len(); //sys.physical_core_count().unwrap();
                     let cpus_f32 = cpus as f32;
 
-                    let mut processes: Vec<&Process> = sys.processes().values().collect();
+                    let mut processes: Vec<&Process> = self.sys.processes().values().collect();
 
                     match processes_sort {
                         EProcessesSort::Name => {
                             processes.sort_by(|a, b| a.name().cmp(b.name()));
+                        }
+                        EProcessesSort::User => {
+                            processes
+                                .sort_by(|a, b| a.user_id().unwrap().cmp(b.user_id().unwrap()));
                         }
                         EProcessesSort::Cpu => {
                             processes
@@ -194,6 +257,18 @@ impl TaskManagerApp {
                                         });
                                     },
                                 );
+                            });
+                            // User
+                            row.col(|ui| {
+                                if let Some(id) = process.user_id() {
+                                    if let Some(user) = self.sys.get_user_by_id(id) {
+                                        ui.label(user.name());
+                                    } else {
+                                        ui.label(" ");
+                                    }
+                                } else {
+                                    ui.label(" ");
+                                }
                             });
                             // CPU
                             row.col(|ui| {
@@ -254,13 +329,6 @@ impl eframe::App for TaskManagerApp {
             last_refresh_time: _,
         } = self;
 
-        // Update data
-        let now = Instant::now();
-        if now - self.last_refresh_time >= self.refresh_interval {
-            sys.refresh_all();
-            self.last_refresh_time = now;
-        }
-
         if false {
             #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
             egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -277,11 +345,11 @@ impl eframe::App for TaskManagerApp {
             });
         }
 
-        Self::window_selection_panel(ctx, current_window);
+        Self::bottom_panel(ctx, current_window, sys);
 
         match current_window {
             EWindow::Processes => {
-                Self::processes_window(ctx, processes_sort, sys);
+                Self::processes_window(self, ctx);
             }
             EWindow::Performance => {}
             EWindow::AppHistory => {}
