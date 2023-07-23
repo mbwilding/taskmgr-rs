@@ -1,20 +1,23 @@
 [package]
-name = "eframe_template"
+name = "taskmanager"
 version = "0.1.0"
-authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+authors = ["Matthew Wilding <matt@wildingstudios.com>"]
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.71"
 
 
 [dependencies]
 egui = "0.22.0"
+egui_extras = "0.22.0"
 eframe = { version = "0.22.0", default-features = false, features = [
-    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
 log = "0.4"
+itertools = "0.11.0"
+sysinfo = "0.29.4"
+# window_titles = { git = "https://github.com/HiruNya/window_titles.git" }
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
