@@ -3,7 +3,6 @@ use egui_extras::{Column, TableBuilder};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use sysinfo::{CpuExt, Process, ProcessExt, System, SystemExt};
-use window_titles::{Connection, ConnectionTrait};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 enum EWindow {
@@ -42,9 +41,6 @@ pub struct TaskManagerApp {
 
     #[serde(skip)]
     last_refresh_time: Instant,
-
-    #[serde(skip)]
-    window_titles: Connection,
 }
 
 impl Default for TaskManagerApp {
@@ -55,7 +51,6 @@ impl Default for TaskManagerApp {
             sys: System::new_all(),
             refresh_interval: Duration::from_secs(1),
             last_refresh_time: Instant::now(),
-            window_titles: Connection::new().unwrap(),
         }
     }
 }
@@ -105,8 +100,7 @@ impl TaskManagerApp {
             //     ui.separator();
             // });
 
-            // Table
-            let table = TableBuilder::new(ui)
+            TableBuilder::new(ui)
                 .striped(true)
                 .resizable(true)
                 .auto_shrink([false, false])
@@ -117,9 +111,7 @@ impl TaskManagerApp {
                 .column(Column::initial(100.0).range(40.0..=300.0)) // Disk
                 .column(Column::initial(100.0).range(40.0..=300.0)) // Network
                 .column(Column::remainder()) // Blank
-                .min_scrolled_height(0.0);
-
-            table
+                .min_scrolled_height(0.0)
                 .header(40.0, |mut header| {
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::left_to_right(egui::Align::BOTTOM), |ui| {
@@ -143,13 +135,13 @@ impl TaskManagerApp {
                     });
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                            ui.heading("0%"); // TODO
+                            ui.heading(" ");
                             ui.selectable_value(processes_sort, EProcessesSort::Disk, "Disk");
                         });
                     });
                     header.col(|ui| {
                         ui.with_layout(egui::Layout::top_down(egui::Align::RIGHT), |ui| {
-                            ui.heading("0%"); // TODO
+                            ui.heading(" ");
                             ui.selectable_value(processes_sort, EProcessesSort::Network, "Network");
                         });
                     });
@@ -258,9 +250,8 @@ impl eframe::App for TaskManagerApp {
             current_window,
             processes_sort,
             sys,
-            refresh_interval,
-            last_refresh_time,
-            window_titles,
+            refresh_interval: _,
+            last_refresh_time: _,
         } = self;
 
         // Update data

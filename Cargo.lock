@@ -1338,15 +1338,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quick-xml"
-version = "0.28.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ce5e73202a820a31f8a0ee32ada5e21029c81fd9e3ebf668a40832e4219d9d1"
-dependencies = [
- "memchr",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1620,7 +1611,6 @@ dependencies = [
  "serde",
  "sysinfo",
  "wasm-bindgen-futures",
- "window_titles",
 ]
 
 [[package]]
@@ -1994,14 +1984,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
-name = "window_titles"
-version = "0.1.0"
-dependencies = [
- "winapi",
- "xcb",
-]
-
-[[package]]
 name = "windows-sys"
 version = "0.45.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2208,17 +2190,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56b245751c0ac9db0e006dc812031482784e434630205a93c73cfefcaabeac67"
 dependencies = [
  "nix 0.24.3",
-]
-
-[[package]]
-name = "xcb"
-version = "1.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb3acf6b0945550d37d3a683b8f7de9d9f66b2c14dc390313b34d7ac6f1b4089"
-dependencies = [
- "bitflags",
- "libc",
- "quick-xml",
 ]
 
 [[package]]
