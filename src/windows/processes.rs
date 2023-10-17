@@ -29,6 +29,36 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
         app.last_refresh_time = now;
     }
 
+    let mut processes: Vec<&Process> = app.sys.processes().values().collect();
+
+    let cpus = app.sys.cpus().len(); //sys.physical_core_count().unwrap();
+    let cpus_f32 = cpus as f32;
+
+    match app.processes_sort {
+        EProcessesSort::Name => {
+            processes.sort_by(|a, b| a.name().cmp(b.name()));
+        }
+        EProcessesSort::User => {
+            processes.sort_by(|a, b| a.user_id().cmp(&b.user_id()));
+        }
+        EProcessesSort::Cpu => {
+            processes.sort_by(|a, b| b.cpu_usage().partial_cmp(&a.cpu_usage()).unwrap());
+        }
+        EProcessesSort::Memory => {
+            processes.sort_by(|a, b| b.memory().partial_cmp(&a.memory()).unwrap());
+        }
+        EProcessesSort::Disk => {
+            processes.sort_by(|a, b| {
+                (b.disk_usage().read_bytes + b.disk_usage().written_bytes)
+                    .partial_cmp(&(a.disk_usage().read_bytes + a.disk_usage().written_bytes))
+                    .unwrap()
+            });
+        }
+        EProcessesSort::Network => {
+            // TODO
+        }
+    }
+
     TableBuilder::new(ui)
         .striped(true)
         .resizable(true)
@@ -86,105 +116,70 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
                 });
             });
         })
-        .body(|mut body| {
-            let row_height = 28.0;
-
-            let cpus = app.sys.cpus().len(); //sys.physical_core_count().unwrap();
-            let cpus_f32 = cpus as f32;
-
-            let mut processes: Vec<&Process> = app.sys.processes().values().collect();
-
-            match app.processes_sort {
-                EProcessesSort::Name => {
-                    processes.sort_by(|a, b| a.name().cmp(b.name()));
-                }
-                EProcessesSort::User => {
-                    processes.sort_by(|a, b| a.user_id().cmp(&b.user_id()));
-                }
-                EProcessesSort::Cpu => {
-                    processes.sort_by(|a, b| b.cpu_usage().partial_cmp(&a.cpu_usage()).unwrap());
-                }
-                EProcessesSort::Memory => {
-                    processes.sort_by(|a, b| b.memory().partial_cmp(&a.memory()).unwrap());
-                }
-                EProcessesSort::Disk => {
-                    processes.sort_by(|a, b| {
-                        (b.disk_usage().read_bytes + b.disk_usage().written_bytes)
-                            .partial_cmp(
-                                &(a.disk_usage().read_bytes + a.disk_usage().written_bytes),
-                            )
-                            .unwrap()
-                    });
-                }
-                EProcessesSort::Network => {
-                    // TODO
-                }
-            }
-
-            for process in processes {
-                body.row(row_height, |mut row| {
-                    // Name
-                    row.col(|ui| {
-                        ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                            let name = process.name();
-                            // let title = window_titles.window_title().unwrap();
-                            ui.horizontal(|ui| {
-                                ui.label("▶ 💻");
-                                ui.label(name);
-                            });
+        .body(|body| {
+            body.rows(28.0, processes.len(), |i, mut row| {
+                let process = processes[i];
+                // Name
+                row.col(|ui| {
+                    ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                        let name = process.name();
+                        // let title = window_titles.window_title().unwrap();
+                        ui.horizontal(|ui| {
+                            ui.label("▶ 💻");
+                            ui.label(name);
                         });
                     });
-                    // User
-                    row.col(|ui| {
-                        if let Some(id) = process.user_id() {
-                            if let Some(user) = app.sys.get_user_by_id(id) {
-                                ui.label(user.name());
-                            } else {
-                                ui.label(" ");
-                            }
+                });
+                // User
+                row.col(|ui| {
+                    if let Some(id) = process.user_id() {
+                        if let Some(user) = app.sys.get_user_by_id(id) {
+                            ui.label(user.name());
                         } else {
                             ui.label(" ");
                         }
-                    });
-                    // CPU
-                    row.col(|ui| {
-                        let cpu = process.cpu_usage() / cpus_f32;
-                        if cpu < 0.01 {
-                            ui.label("0%");
-                        } else {
-                            ui.label(format!("{:.2}%", cpu));
-                        }
-                    });
-                    // Memory
-                    row.col(|ui| {
-                        let memory = process.memory() as f64 / (1024 * 1024) as f64;
-                        if memory < 0.01 {
-                            ui.label("0 MB");
-                        } else {
-                            ui.label(format!("{:.2} MB", memory));
-                        }
-                    });
-                    // Disk
-                    row.col(|ui| {
-                        let disk_read = process.disk_usage().read_bytes;
-                        let disk_write = process.disk_usage().written_bytes;
-                        let disk_combined = disk_read + disk_write;
-                        let disk = disk_combined as f64 / (1024 * 1024) as f64;
-                        if disk < 0.01 {
-                            ui.label("0 MB/s");
-                        } else {
-                            ui.label(format!("{:.2} MB/s", disk));
-                        }
-                    });
-                    // Network
-                    row.col(|ui| {
-                        // TODO
-                        ui.label("0 Mbps");
-                        // if ui.button("kill").clicked() {
-                        //     process.kill();
-                        // }
-                    });
+                    } else {
+                        ui.label(" ");
+                    }
                 });
-            }
+                // CPU
+                row.col(|ui| {
+                    let cpu = process.cpu_usage() / cpus_f32;
+                    if cpu < 0.01 {
+                        ui.label("0%");
+                    } else {
+                        ui.label(format!("{:.2}%", cpu));
+                    }
+                });
+                // Memory
+                row.col(|ui| {
+                    let memory = process.memory() as f64 / (1024 * 1024) as f64;
+                    if memory < 0.01 {
+                        ui.label("0 MB");
+                    } else {
+                        ui.label(format!("{:.2} MB", memory));
+                    }
+                });
+                // Disk
+                row.col(|ui| {
+                    let disk_read = process.disk_usage().read_bytes;
+                    let disk_write = process.disk_usage().written_bytes;
+                    let disk_combined = disk_read + disk_write;
+                    let disk = disk_combined as f64 / (1024 * 1024) as f64;
+                    if disk < 0.01 {
+                        ui.label("0 MB/s");
+                    } else {
+                        ui.label(format!("{:.2} MB/s", disk));
+                    }
+                });
+                // Network
+                row.col(|ui| {
+                    // TODO
+                    ui.label("0 Mbps");
+                    // if ui.button("kill").clicked() {
+                    //     process.kill();
+                    // }
+                });
+            });
         });
 }
