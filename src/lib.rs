@@ -1,4 +1,5 @@
-#![warn(clippy::all, rust_2018_idioms)]
-
 mod app;
+mod windows;
+mod enums;
+
 pub use app::TaskManagerApp;
