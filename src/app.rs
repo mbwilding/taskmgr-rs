@@ -1,5 +1,6 @@
 use crate::enums::*;
 use crate::windows;
+use egui::WidgetType::TextEdit;
 use egui::*;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -51,12 +52,26 @@ impl TaskManagerApp {
         Default::default()
     }
 
-    fn bottom_panel(ctx: &Context, current_window: &mut EWindow, sys: &mut System) {
+    fn top_panel(&mut self, ctx: &Context) {
+        TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            menu::bar(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    egui::TextEdit::singleline(&mut self.search)
+                        .hint_text("Type a name, publisher, or PID to search")
+                        .ui(ui);
+                });
+            });
+        });
+    }
+
+    fn bottom_panel(&mut self, ctx: &Context) {
         TopBottomPanel::bottom("bottom_panel")
             .resizable(false)
             .show(ctx, |ui| {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
+                        let current_window = &mut self.current_window;
+
                         // ui.style_mut().override_text_style = Some(TextStyle::Heading);
                         ui.selectable_value(current_window, EWindow::Processes, "🔢 Processes");
                         ui.selectable_value(current_window, EWindow::Performance, "📈 Performance");
@@ -75,20 +90,23 @@ impl TaskManagerApp {
                     ui.horizontal(|ui| {
                         #[cfg(target_os = "windows")]
                         {
-                            ui.label(format!("Host: {}", sys.host_name().unwrap()));
-                            ui.label(format!("User: {}", sys.users().first().unwrap().name()));
+                            ui.label(format!("Host: {}", self.sys.host_name().unwrap()));
+                            ui.label(format!(
+                                "User: {}",
+                                self.sys.users().first().unwrap().name()
+                            ));
                             ui.label(format!(
                                 "OS: {} {}",
-                                sys.name().unwrap(),
-                                sys.os_version().unwrap()
+                                self.sys.name().unwrap(),
+                                self.sys.os_version().unwrap()
                             ));
                         }
                         #[cfg(not(target_os = "windows"))]
                         {
-                            ui.label(format!("Host: {}", sys.host_name().unwrap()));
-                            ui.label(format!("OS: {}", sys.name().unwrap()));
-                            ui.label(format!("Version: {}", sys.os_version().unwrap()));
-                            ui.label(format!("Kernel: {}", sys.kernel_version().unwrap()));
+                            ui.label(format!("Host: {}", self.sys.host_name().unwrap()));
+                            ui.label(format!("OS: {}", self.sys.name().unwrap()));
+                            ui.label(format!("Version: {}", self.sys.os_version().unwrap()));
+                            ui.label(format!("Kernel: {}", self.sys.kernel_version().unwrap()));
                         }
                     });
                 });
@@ -102,29 +120,18 @@ impl eframe::App for TaskManagerApp {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        if false {
-            TopBottomPanel::top("top_panel").show(ctx, |ui| {
-                menu::bar(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.text_edit_singleline(&mut self.search);
-                    });
-                });
-            });
-        }
-
-        Self::bottom_panel(ctx, &mut self.current_window, &mut self.sys);
+        // self.top_panel(ctx);
+        self.bottom_panel(ctx);
 
         CentralPanel::default().show(ctx, |ui| match self.current_window {
-            EWindow::Processes => {
-                windows::processes::show(self, ui);
-            }
-            EWindow::Performance => {}
-            EWindow::AppHistory => {}
-            EWindow::StartupApps => {}
-            EWindow::Users => {}
-            EWindow::Details => {}
-            EWindow::Services => {}
-            EWindow::Settings => {}
+            EWindow::Processes => windows::processes::show(self, ui),
+            EWindow::Performance => windows::performance::show(self, ui),
+            EWindow::AppHistory => windows::app_history::show(self, ui),
+            EWindow::StartupApps => windows::startup_apps::show(self, ui),
+            EWindow::Users => windows::users::show(self, ui),
+            EWindow::Details => windows::details::show(self, ui),
+            EWindow::Services => windows::services::show(self, ui),
+            EWindow::Settings => windows::settings::show(self, ui),
         });
     }
 }
