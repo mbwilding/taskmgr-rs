@@ -126,7 +126,9 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
                         let name = process.name();
                         // let title = window_titles.window_title().unwrap();
                         ui.horizontal(|ui| {
-                            ui.label("▶ 💻");
+                            if ui.button("☠").clicked() {
+                                process.kill();
+                            }
                             ui.label(name);
                         });
                     });
@@ -177,9 +179,6 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
                 row.col(|ui| {
                     // TODO
                     ui.label("0 Mbps");
-                    // if ui.button("kill").clicked() {
-                    //     process.kill();
-                    // }
                 });
             });
         });

@@ -1,6 +1,5 @@
 use crate::enums::*;
 use crate::windows;
-use egui::WidgetType::TextEdit;
 use egui::*;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -24,6 +23,9 @@ pub struct TaskManagerApp {
 
     #[serde(skip)]
     pub search: String,
+
+    #[serde(skip)]
+    pub top_bar_toggle: bool,
 }
 
 impl Default for TaskManagerApp {
@@ -35,6 +37,7 @@ impl Default for TaskManagerApp {
             refresh_interval: Duration::from_secs(1),
             last_refresh_time: Instant::now(),
             search: String::new(),
+            top_bar_toggle: false,
         }
     }
 }
@@ -120,7 +123,9 @@ impl eframe::App for TaskManagerApp {
     }
 
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        // self.top_panel(ctx);
+        if self.top_bar_toggle {
+            self.top_panel(ctx);
+        }
         self.bottom_panel(ctx);
 
         CentralPanel::default().show(ctx, |ui| match self.current_window {
