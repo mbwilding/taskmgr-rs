@@ -1,5 +1,5 @@
 mod app;
-mod windows;
 mod enums;
+mod windows;
 
 pub use app::TaskManagerApp;

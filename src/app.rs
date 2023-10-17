@@ -1,12 +1,12 @@
 use crate::enums::*;
 use crate::windows;
 use egui::*;
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use sysinfo::*;
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
+#[derive(Deserialize, Serialize)]
+#[serde(default)]
 pub struct TaskManagerApp {
     pub current_window: EWindow,
 
@@ -39,18 +39,11 @@ impl Default for TaskManagerApp {
 }
 
 impl TaskManagerApp {
-    /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        // Set the font color for the dark theme to white.
         let mut visuals = Visuals::dark();
         visuals.override_text_color = Some(Color32::WHITE);
         cc.egui_ctx.set_visuals(visuals);
 
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
