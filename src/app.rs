@@ -93,23 +93,35 @@ impl TaskManagerApp {
                     ui.horizontal(|ui| {
                         #[cfg(target_os = "windows")]
                         {
-                            ui.label(format!("Host: {}", self.sys.host_name().unwrap()));
+                            ui.label(format!(
+                                "Host: {}",
+                                self.sys.host_name().unwrap_or_default()
+                            ));
                             ui.label(format!(
                                 "User: {}",
                                 self.sys.users().first().unwrap().name()
                             ));
                             ui.label(format!(
                                 "OS: {} {}",
-                                self.sys.name().unwrap(),
-                                self.sys.os_version().unwrap()
+                                self.sys.name().unwrap_or_default(),
+                                self.sys.os_version().unwrap_or_default()
                             ));
                         }
                         #[cfg(not(target_os = "windows"))]
                         {
-                            ui.label(format!("Host: {}", self.sys.host_name().unwrap()));
-                            ui.label(format!("OS: {}", self.sys.name().unwrap()));
-                            ui.label(format!("Version: {}", self.sys.os_version().unwrap()));
-                            ui.label(format!("Kernel: {}", self.sys.kernel_version().unwrap()));
+                            ui.label(format!(
+                                "Host: {}",
+                                self.sys.host_name().unwrap_or_default()
+                            ));
+                            ui.label(format!("OS: {}", self.sys.name().unwrap_or_default()));
+                            ui.label(format!(
+                                "Version: {}",
+                                self.sys.os_version().unwrap_or_default()
+                            ));
+                            ui.label(format!(
+                                "Kernel: {}",
+                                self.sys.kernel_version().unwrap_or_default()
+                            ));
                         }
                     });
                 });
