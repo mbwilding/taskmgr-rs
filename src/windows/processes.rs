@@ -119,6 +119,7 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
         .body(|body| {
             body.rows(28.0, processes.len(), |i, mut row| {
                 let process = processes[i];
+
                 // Name
                 row.col(|ui| {
                     ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
