@@ -16,13 +16,17 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
     if now - app.last_refresh_time >= app.refresh_interval {
         //sys.refresh_all();
         app.sys.refresh_specifics(
-            RefreshKind::new()
+            RefreshKind::nothing()
                 //.with_networks()
-                .with_cpu(CpuRefreshKind::new().with_cpu_usage().without_frequency())
+                .with_cpu(
+                    CpuRefreshKind::nothing()
+                        .with_cpu_usage()
+                        .without_frequency(),
+                )
                 .with_processes(
-                    ProcessRefreshKind::new()
+                    ProcessRefreshKind::nothing()
                         .with_cpu()
-                        .with_user()
+                        .with_user(UpdateKind::Always)
                         .with_disk_usage(), //.without_user(),
                 ),
         );
@@ -86,7 +90,7 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
             });
             header.col(|ui| {
                 ui.with_layout(Layout::top_down(Align::RIGHT), |ui| {
-                    let cpu = app.sys.global_cpu_info().cpu_usage();
+                    let cpu = app.sys.global_cpu_usage();
                     ui.heading(format!("{:.0}%", cpu));
                     ui.selectable_value(&mut app.processes_sort, EProcessesSort::Cpu, "CPU");
                 });
@@ -117,8 +121,8 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
             });
         })
         .body(|body| {
-            body.rows(28.0, processes.len(), |i, mut row| {
-                let process = processes[i];
+            body.rows(28.0, processes.len(), |mut row| {
+                let process = processes[row.index()];
 
                 // Name
                 row.col(|ui| {
@@ -129,18 +133,17 @@ pub fn show(app: &mut TaskManagerApp, ui: &mut Ui) {
                             if ui.button("☠").clicked() {
                                 process.kill();
                             }
-                            ui.label(name);
+                            ui.label(name.to_str().unwrap_or_default());
                         });
                     });
                 });
                 // User
                 row.col(|ui| {
                     if let Some(id) = process.user_id() {
-                        if let Some(user) = app.sys.get_user_by_id(id) {
-                            ui.label(user.name());
-                        } else {
-                            ui.label(" ");
-                        }
+                        // TODO: Broken with latest sysinfo
+                        // if let Some(user) = app.sys.get_user_by_id(id) {
+                        //     ui.label(user.name());
+                        ui.label(" ");
                     } else {
                         ui.label(" ");
                     }

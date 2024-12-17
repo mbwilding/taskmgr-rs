@@ -95,32 +95,29 @@ impl TaskManagerApp {
                         {
                             ui.label(format!(
                                 "Host: {}",
-                                self.sys.host_name().unwrap_or_default()
+                                System::host_name().unwrap_or_default()
                             ));
                             ui.label(format!(
                                 "User: {}",
-                                self.sys.users().first().unwrap().name()
+                                System::users().first().unwrap().name()
                             ));
                             ui.label(format!(
                                 "OS: {} {}",
-                                self.sys.name().unwrap_or_default(),
-                                self.sys.os_version().unwrap_or_default()
+                                System::name().unwrap_or_default(),
+                                System::os_version().unwrap_or_default()
                             ));
                         }
                         #[cfg(not(target_os = "windows"))]
                         {
-                            ui.label(format!(
-                                "Host: {}",
-                                self.sys.host_name().unwrap_or_default()
-                            ));
-                            ui.label(format!("OS: {}", self.sys.name().unwrap_or_default()));
+                            ui.label(format!("Host: {}", System::host_name().unwrap_or_default()));
+                            ui.label(format!("OS: {}", System::name().unwrap_or_default()));
                             ui.label(format!(
                                 "Version: {}",
-                                self.sys.os_version().unwrap_or_default()
+                                System::host_name().unwrap_or_default()
                             ));
                             ui.label(format!(
                                 "Kernel: {}",
-                                self.sys.kernel_version().unwrap_or_default()
+                                System::kernel_version().unwrap_or_default()
                             ));
                         }
                     });
